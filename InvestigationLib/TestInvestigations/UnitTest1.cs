@@ -12,7 +12,10 @@ namespace TestInvestigations
         public void TestConcurrencyPerformace()
         {
             ConcurrencyPerformance p = new ConcurrencyPerformance();
-            WritePerformanceTest(p.ExecListTest(), "ListTest");            
+            PerformanceResult result = p.ExecListTest();
+            Assert.AreEqual(30000, result.ListTest.Count);
+            WritePerformanceTest(result.ElapsedTime, "ListTest");
+            
         }
 
         private static void WritePerformanceTest(long milliSec, string testName)

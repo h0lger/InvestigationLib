@@ -41,6 +41,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Threading\ConcurrencyPerformance.cs" />
+    <Compile Include="Threading\PerformanceResult.cs" />
     <Compile Include="Utils\Utils.cs" />
   </ItemGroup>
   <ItemGroup />
