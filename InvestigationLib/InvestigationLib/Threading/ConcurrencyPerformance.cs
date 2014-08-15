@@ -9,8 +9,9 @@ namespace InvestigationLib.Threading
 {
     public class ConcurrencyPerformance
     {
-        #region Variables         
+        #region Variables
         private List<KeyValuePair<int, short>> _listTest = new List<KeyValuePair<int, short>>(30000);
+        private HashSet<KeyValuePair<int, short>> _hashTest = new HashSet<KeyValuePair<int, short>>();
         #endregion
 
         #region Properties
@@ -21,11 +22,47 @@ namespace InvestigationLib.Threading
                 return _listTest;
             }
         }
+        protected HashSet<KeyValuePair<int, short>> HashTest
+        {
+            get
+            {
+                return _hashTest;
+            }
+        }
+
+        protected CollectionType CollType { get; set; }
+
+        protected int CollectionCount
+        {
+            get
+            {
+                switch (CollType)
+                {
+                    case CollectionType.List:
+                        return ListTest.Count;
+                    case CollectionType.HashSet:
+                        return HashTest.Count;
+                    
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+        }
+        #endregion
+
+        #region Enums
+        public enum CollectionType
+        {
+            Unknown = 0,
+            List = 1,
+            HashSet = 2
+        }
         #endregion
 
         #region Methods
-        public PerformanceResult ExecListTest()
+        public PerformanceResult ExecCollectionTest(CollectionType collectionType)
         {
+            CollType = collectionType;
             Action<object> a = new Action<object>(x => 
                 {
                     short threadNo = short.Parse(x.ToString());
@@ -35,31 +72,37 @@ namespace InvestigationLib.Threading
                     {
                         //Increase the next integer with 1
                         //To test reading/saving from multi threaded environment
-                        if (ListTest.Count > 0)
-                            ListTest.Add(new KeyValuePair<int, short>((ListTest[(ListTest.Count - 1)].Key + 1), threadNo));
-                        else
-                            ListTest.Add(new KeyValuePair<int,short>(i, threadNo));
+                        switch (collectionType)
+                        {
+                            case CollectionType.List:
+                                if (ListTest.Count > 0)
+                                    ListTest.Add(new KeyValuePair<int, short>((ListTest[(ListTest.Count - 1)].Key + 1), threadNo));
+                                else
+                                    ListTest.Add(new KeyValuePair<int, short>(i, threadNo));
+                                break;
+                            default:
+                                throw new NotImplementedException();
+                        }
+                        
                     }                    
                     Debug.WriteLine("Finished creation of 10k ints...");
                 });
             Action b = new Action(() =>
             {
-                Task t1 = new Task(a, 1);                
-                Task t2 = new Task(a, 2);
-                Task t3 = new Task(a, 3);
-                t1.Start();
-                t2.Start();
-                t3.Start();
-                t1.Wait();
-                t2.Wait();
-                t3.Wait();
-                Debug.WriteLine("List count: " + ListTest.Count().ToString());
+                Task[] tasks = new Task[3]
+                {
+                    Task.Factory.StartNew(a, 1),        
+                    Task.Factory.StartNew(a, 2),
+                    Task.Factory.StartNew(a, 3)
+                };
+                Task.WaitAll(tasks);
+                Debug.WriteLine("List count: " + CollectionCount.ToString());
             });
 
             long elapsedTime = Utils.Utils.MeasureElapsedTime(b);            
 
             return new PerformanceResult(elapsedTime, ListTest);
-        }
+        }        
         #endregion        
     }
 }
